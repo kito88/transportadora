@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block conteudo %}
+<h2>Coletas Registradas</h2>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>ID</th>
+        <th>Data</th>
+        <th>Cliente</th>
+        <th>Ações</th>
+    </tr>
+    {% for coleta in coletas %}
+    <tr>
+        <td>{{ coleta[0] }}</td>
+        <td>{{ coleta[1] }}</td>
+        <td>{{ coleta[2] }}</td>
+        <td>
+            <a href="{{ url_for('imprimir_coleta', coleta_id=coleta[0]) }}">Imprimir PDF</a>
+            <form method="POST" action="{{ url_for('marcar_coletado', coleta_id=coleta[0]) }}" style="display:inline;">
+                <button type="submit" class="btn btn-success btn-sm" title="Marcar como Coletado">
+                    <i class="bi bi-check2-circle"></i> Coletado
+                </button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+<p><a href="{{ url_for('nova_coleta') }}">+ Nova Coleta</a></p>
+{% endblock %}

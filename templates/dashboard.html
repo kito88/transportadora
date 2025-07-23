@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2 class="mb-4">Olá, {{ usuario }} 👋</h2>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card shadow-sm text-bg-primary">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="bi bi-people-fill fs-1"></i>
+                <div>
+                    <h5 class="card-title">Clientes</h5>
+                    <p class="card-text">Gerencie todos os seus clientes cadastrados.</p>
+                    <a href="{{ url_for('listar_clientes') }}" class="btn btn-light btn-sm">Ver Clientes</a>
+                    <a href="{{ url_for('nova_coleta') }}" class="btn btn-success mb-3"><i class="bi bi-box-arrow-in-down"></i> Agendar Coleta</a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm text-bg-success">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="bi bi-truck fs-1"></i>
+                <div>
+                    <h5 class="card-title">Fretes</h5>
+                    <p class="card-text">Acompanhe e registre coletas e entregas.</p>
+                    <a href="#" class="btn btn-light btn-sm disabled">Em breve</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm text-bg-warning">
+            <div class="card-body d-flex align-items-center gap-3">
+                <i class="bi bi-bar-chart-fill fs-1"></i>
+                <div>
+                    <h5 class="card-title">Relatórios</h5>
+                    <p class="card-text">Visualize os principais indicadores.</p>
+                    <a href="#" class="btn btn-light btn-sm disabled">Em breve</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+<!-- Gr

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2>Nova Coleta</h2>
+
+<form method="post" action="{{ url_for('nova_coleta') }}">
+  <div class="mb-3">
+    <label for="cliente_id" class="form-label">Remetente (Cliente):</label>
+    <div class="d-flex align-items-center gap-2">
+      <select name="cliente_id" id="cliente_id" class="form-select" required>
+        <option value="">Selecione</option>
+        {% for cliente in clientes %}
+          <option value="{{ cliente[0] }}" {% if cliente and cliente[0] == cliente_id %}selected{% endif %}>
+            {{ cliente[1] }}
+          </option>
+        {% endfor %}
+      </select>
+      <a href="{{ url_for('novo_cliente') }}" class="btn btn-primary btn-sm" target="_blank">Cadastrar Cliente</a>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="destinatario_nome" class="form-label">Destinatário Nome:</label>
+    <input type="text" name="destinatario_nome" id="destinatario_nome" class="form-control" required>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-12 mb-2">
+      <label for="destinatario_endereco" class="form-label">Destinatário Endereço:</label>
+      <input type="text" name="destinatario_endereco" id="destinatario_endereco" class="form-control" required>
+    </div>
+    <div class="col-md-7">
+      <label for="destinatario_cidade" class="form-label">Destinatário Cidade:</label>
+      <input type="text" name="destinatario_cidade" id="destinatario_cidade" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+      <label for="destinatario_uf" class="form-label">Destinatário UF:</label>
+      <input type="text" name="destinatario_uf" id="destinatario_uf" class="form-control" required maxlength="2" style="text-transform: uppercase;">
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <label for="volumes" class="form-label">Volumes a ser coletado:</label>
+      <input type="text" name="volumes" id="volumes" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label for="peso" class="form-label">Peso (kg):</label>
+      <input type="text" name="peso" id="peso" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label for="valor_mercadoria" class="form-label">Valor da Mercadoria (R$):</label>
+      <input type="text" name="valor_mercadoria" id="valor_mercadoria" class="form-control">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Dimensões (cm):</label>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <input type="number" name="largura" id="largura" class="form-control" placeholder="Largura" step="0.01" min="0">
+      </div>
+      <div class="col-md-4">
+        <input type="number" name="altura" id="altura" class="form-control" placeholder="Altura" step="0.01" min="0">
+      </div>
+      <div class="col-md-4">
+        <input type="number" name="comprimento" id="comprimento" class="form-control" placeholder="Comprimento" step="0.01" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="volume_m3" class="form-label">Volume (m³):</label>
+    <input type="text" id="volume_m3" class="form-control" readonly>
+  </div>
+
+  <div class="mb-3">
+    <label for="observacoes" class="form-label">Observações:</label>
+    <textarea name="observacoes" id="observacoes" rows="4" class="form-control"></textarea>
+  </div>
+
+  <button type="submit" class="btn btn-success">Cadastrar Coleta</button>
+</form>
+
+<script>
+  function calcularVolume() {
+    const largura = parseFloat(document.getElementById('largura').value) || 0;
+    const altura = parseFloat(document.getElementById('altura').value) || 0;
+    const comprimento = parseFloat(document.getElementById('comprimento').value) || 0;
+
+    const volume = (largura / 100) * (altura / 100) * (comprimento / 100);
+    document.getElementById('volume_m3').value = volume.toFixed(4);
+  }
+
+  document.getElementById('largura').addEventListener('input', calcularVolume);
+  document.getElementById('altura').addEventListener('input', calcularVolume);
+  document.getElementById('comprimento').addEventListener('input', calcularVolume);
+</script>
+
+{% endblock %}

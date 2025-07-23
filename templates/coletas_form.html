@@ -1,0 +1,15 @@
+
+{% extends 'base.html' %}
+{% block conteudo %}
+<!-- templates/coletas_form.html -->
+<h2>Nova Coleta</h2>
+<form method="POST">
+  <label>Remetente:</label><input name="remetente" required><br>
+  <label>Destinatário:</label><input name="destinatario" required><br>
+  <label>Endereço de Coleta:</label><input name="endereco_coleta" required><br>
+  <label>Endereço de Entrega:</label><input name="endereco_entrega" required><br>
+  <label>Data da Coleta:</label><input name="data_coleta" type="date" required><br>
+  <label>Observações:</label><textarea name="observacoes"></textarea><br>
+  <button type="submit">Gerar Coleta</button>
+</form>
+{% endblock %}

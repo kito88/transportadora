@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2 class="mb-4">Fretes</h2>
+<a href="{{ url_for('novo_frete') }}" class="btn btn-primary mb-3">Novo Frete</a>
+
+<table class="table table-bordered table-hover bg-white shadow-sm">
+    <thead class="table-primary">
+        <tr>
+            <th>#</th>
+            <th>Remetente</th>
+            <th>Destinatário</th>
+            <th>Origem</th>
+            <th>Destino</th>
+            <th>Data Coleta</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for frete in fretes %}
+        <tr>
+            <td>{{ frete[0] }}</td>
+            <td>{{ frete[1] }}</td>
+            <td>{{ frete[2] }}</td>
+            <td>{{ frete[3] }}</td>
+            <td>{{ frete[4] }}</td>
+            <td>{{ frete[5] }}</td>
+            <td>{{ frete[6] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

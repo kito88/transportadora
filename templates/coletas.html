@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2>Coletas Agendadas</h2>
+
+<a href="{{ url_for('nova_coleta') }}" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Agendar Nova Coleta</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Data da Coleta</th>
+            <th>Cliente</th>
+            <th>Destinatário</th>
+            <th>Cidade</th>
+            <th>UF</th>
+            <th>Status</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for coleta in coletas %}
+        <tr>
+            <td>{{ coleta[0] }}</td>
+            <td>{{ coleta[1] }}</td>
+            <td>{{ coleta[2] }}</td>
+            <td>{{ coleta[3] }}</td>
+            <td>{{ coleta[4] }}</td>
+            <td>{{ coleta[5] }}</td>
+            <td>
+                {% if coleta[6] == 'Pendente' %}
+                    <span class="badge bg-warning text-dark">Pendente</span>
+                {% elif coleta[6] == 'Coletado' %}
+                    <span class="badge bg-success">Coletado</span>
+                {% elif coleta[6] == 'Atrasado' %}
+                    <span class="badge bg-danger">Atrasado</span>
+                {% else %}
+                    {{ coleta[6] }}
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('imprimir_coleta', coleta_id=coleta[0]) }}" class="btn btn-primary btn-sm"><i class="bi bi-printer"></i> Imprimir</a>
+                <!-- Pode incluir aqui botão para marcar como coletado, editar, etc -->
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
