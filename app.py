@@ -128,27 +128,54 @@ def novo_cliente():
         return redirect(url_for('login'))
 
     if request.method == 'POST':
+        import requests
+
+        # Limpa o CNPJ/CPF
         documento = request.form.get('documento', '').replace('.', '').replace('/', '').replace('-', '')
-    dados = (
-        request.form.get('nome'),
-        documento,
-        request.form.get('cep'),
-        request.form.get('endereco'),
-        request.form.get('bairro'),
-        request.form.get('cidade'),
-        request.form.get('estado'),
-        request.form.get('telefone')
-    )
-    conn = conectar()
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO clientes (nome, documento, cep, endereco, bairro, cidade, estado, telefone)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    """, dados)
-    conn.commit()
-    conn.close()
-    flash("Cliente cadastrado com sucesso!", "success")
-    return redirect(url_for('listar_clientes'))
+
+        # Tenta buscar dados da Receita (CNPJ válido)
+        cidade = request.form.get('cidade', '')
+        endereco = request.form.get('endereco', '')
+        bairro = request.form.get('bairro', '')
+        telefone = request.form.get('telefone', '')
+        try:
+            if len(documento) == 14:  # Somente CNPJ
+                url = f'https://publica.cnpj.ws/cnpj/{documento}'
+                resposta = requests.get(url, timeout=10)
+                if resposta.status_code == 200:
+                    dados_api = resposta.json()
+                    estabelecimento = dados_api.get('estabelecimento', {})
+                    endereco = f"{estabelecimento.get('logradouro','')} {estabelecimento.get('numero','')}".strip()
+                    bairro = estabelecimento.get('bairro','')
+                    cidade = estabelecimento.get('municipio','')
+                    telefone = estabelecimento.get('telefone1','') or estabelecimento.get('telefone','')
+        except Exception as e:
+            print("Erro ao buscar dados da API:", e)
+
+        dados = (
+            request.form.get('nome'),
+            documento,
+            request.form.get('cep'),
+            endereco,
+            bairro,
+            cidade,
+            request.form.get('estado'),
+            telefone
+        )
+
+        conn = conectar()
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO clientes (nome, documento, cep, endereco, bairro, cidade, estado, telefone)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, dados)
+        conn.commit()
+        conn.close()
+        flash("Cliente cadastrado com sucesso!", "success")
+        return redirect(url_for('listar_clientes'))
+
+    return render_template('novo_cliente.html')
+
 
 
 
