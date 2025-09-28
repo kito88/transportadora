@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2>Novo Cliente</h2>
+<form method="POST" id="formCliente">
+    <div class="mb-3">
+        <label class="form-label">Documento (CPF/CNPJ):</label>
+        <input type="text" name="documento" id="documento" class="form-control" required>
+        <small class="form-text text-muted">Digite o CNPJ para busca automática dos dados</small>
+    </div>
+    
+    <div class="mb-3">
+        <label class="form-label">Nome:</label>
+        <input type="text" name="nome" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">CEP:</label>
+        <input type="text" name="cep" id="cep" class="form-control" maxlength="9" placeholder="00000-000" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Endereço:</label>
+        <input type="text" name="endereco" id="endereco" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Bairro:</label>
+        <input type="text" name="bairro" id="bairro" class="form-control" readonly>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Cidade:</label>
+        <input type="text" name="cidade" id="cidade" class="form-control" readonly>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Estado:</label>
+        <input type="text" name="estado" id="estado" class="form-control" readonly>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Telefone:</label>
+        <input type="text" name="telefone" id="telefone" class="form-control">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Salvar</button>
+</form>
+
+<a href="{{ url_for('listar_clientes') }}" class="btn btn-link mt-3">← Voltar</a>
+
+<script>
+    // Formatação de CEP
+    function formatarCep(valor) {
+        return valor.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2');
+    }
+
+    // Formatação de CNPJ
+    function formatarCNPJ(cnpj) {
+        cnpj = cnpj.replace(/\D/g, '');
+        cnpj = cnpj.replace(/^(\d{2})(\d)/, '$1.$2');
+        cnpj = cnpj.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        cnpj = cnpj.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        cnpj = cnpj.replace(/(\d{4})(\d)/, '$1-$2');
+        return cnpj;
+    }
+
+    // Busca endereço via CEP
+    document.getElementById('cep').addEventListener('blur', function() {
+        let cep = this.value.replace(/\D/g, '');
+        if (cep.length === 8) {
+            fetch(`https://viacep.com.br/ws/${cep}/json/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById('endereco').value = data.logradouro || '';
+                        document.getElementById('bairro').value = data.bairro || '';
+                        document.getElementById('cidade').value = data.localidade || '';
+                        document.getElementById('estado').value = data.uf || '';
+                    } else {
+                        alert('CEP não encontrado.');
+                    }
+                })
+                .catch(() => alert('Erro ao consultar CEP.'));
+        }
+    });
+
+    // Busca dados do CNPJ usando a rota interna do Flask
+    document.getElementById('documento').addEventListener('blur', function() {
+        let cnpj = this.value.replace(/\D/g, '');
+        if (cnpj.length === 14) {
+            fetch(`/api/consulta_cnpj?cnpj=${cnpj}`)
+                .then(response => response.json())
+                .then(data => {
+                    if(data.erro){
+                        alert(data.erro);
+                    } else {
+                        document.querySelector('input[name="nome"]').value = data.razao_social || '';
+                        document.getElementById('endereco').value = data.endereco || '';
+                        document.getElementById('cidade').value = data.cidade || '';
+                        document.getElementById('estado').value = data.estado || '';
+                        document.getElementById('telefone').value = data.telefone || '';
+                    }
+                })
+                .catch(() => alert('Erro ao consultar CNPJ.'));
+        }
+    });
+
+    // Formatar campos ao digitar
+    document.getElementById('cep').addEventListener('input', function() {
+        this.value = formatarCep(this.value);
+    });
+    document.getElementById('documento').addEventListener('input', function() {
+        this.value = formatarCNPJ(this.value);
+    });
+</script>
+{% endblock %}

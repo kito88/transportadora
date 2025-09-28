@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2>Nova Coleta</h2>
+
+<form method="post" action="{{ url_for('nova_coleta') }}">
+
+  <!-- Remetente -->
+  <div class="mb-3">
+    <label class="form-label">CNPJ Remetente:</label>
+    <div class="d-flex align-items-center gap-2">
+      <input type="text" id="remetente_cnpj" name="remetente_cnpj" class="form-control" placeholder="Digite o CNPJ do cliente" required>
+      <a href="{{ url_for('novo_cliente') }}" class="btn btn-primary btn-sm" target="_blank">Cadastrar Cliente</a>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="cliente_nome" class="form-label">Nome do Remetente:</label>
+    <input type="text" name="cliente_nome" id="cliente_nome" class="form-control" readonly>
+  </div>
+
+  <div class="mb-3">
+    <label for="cliente_endereco" class="form-label">Endereço do Remetente:</label>
+    <input type="text" name="cliente_endereco" id="cliente_endereco" class="form-control" readonly>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-md-7">
+      <label for="cliente_cidade" class="form-label">Cidade:</label>
+      <input type="text" name="cliente_cidade" id="cliente_cidade" class="form-control">
+    </div>
+    <div class="col-md-2">
+      <label for="cliente_uf" class="form-label">UF:</label>
+      <input type="text" name="cliente_uf" id="cliente_uf" class="form-control">
+    </div>
+  </div>
+
+  <!-- Destinatário -->
+  <div class="mb-3">
+    <label for="destinatario_cnpj" class="form-label">Destinatário (CNPJ/CPF):</label>
+    <input type="text" id="destinatario_cnpj" name="destinatario_cnpj" class="form-control" placeholder="Digite o CNPJ ou CPF do destinatário">
+  </div>
+
+  <div class="mb-3">
+    <label for="destinatario_nome" class="form-label">Nome do Destinatário:</label>
+    <input type="text" name="destinatario_nome" id="destinatario_nome" class="form-control" required>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-12 mb-2">
+      <label for="destinatario_endereco" class="form-label">Endereço:</label>
+      <input type="text" name="destinatario_endereco" id="destinatario_endereco" class="form-control" required>
+    </div>
+    <div class="col-md-7">
+      <label for="destinatario_cidade" class="form-label">Cidade:</label>
+      <input type="text" name="destinatario_cidade" id="destinatario_cidade" class="form-control" required>
+    </div>
+    <div class="col-md-2">
+      <label for="destinatario_uf" class="form-label">UF:</label>
+      <input type="text" name="destinatario_uf" id="destinatario_uf" class="form-control" required maxlength="2" style="text-transform: uppercase;">
+    </div>
+  </div>
+
+  <!-- Informações adicionais -->
+  <div class="row mb-3">
+    <div class="col-md-3">
+      <label for="volumes" class="form-label">Volumes a ser coletado:</label>
+      <input type="text" name="volumes" id="volumes" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label for="peso" class="form-label">Peso (kg):</label>
+      <input type="text" name="peso" id="peso" class="form-control">
+    </div>
+    <div class="col-md-3">
+      <label for="valor_mercadoria" class="form-label">Valor da Mercadoria (R$):</label>
+      <input type="text" name="valor_mercadoria" id="valor_mercadoria" class="form-control">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Dimensões (cm):</label>
+    <div class="row g-2">
+      <div class="col-md-4">
+        <input type="number" name="largura" id="largura" class="form-control" placeholder="Largura" step="0.01" min="0">
+      </div>
+      <div class="col-md-4">
+        <input type="number" name="altura" id="altura" class="form-control" placeholder="Altura" step="0.01" min="0">
+      </div>
+      <div class="col-md-4">
+        <input type="number" name="comprimento" id="comprimento" class="form-control" placeholder="Comprimento" step="0.01" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label for="volume_m3" class="form-label">Volume (m³):</label>
+    <input type="text" id="volume_m3" class="form-control" readonly>
+  </div>
+
+  <div class="mb-3">
+    <label for="observacoes" class="form-label">Observações:</label>
+    <textarea name="observacoes" id="observacoes" rows="4" class="form-control"></textarea>
+  </div>
+
+  <button type="submit" class="btn btn-success">Cadastrar Coleta</button>
+</form>
+
+<script>
+  // Calcula volume em m³
+  function calcularVolume() {
+    const largura = parseFloat(document.getElementById('largura').value) || 0;
+    const altura = parseFloat(document.getElementById('altura').value) || 0;
+    const comprimento = parseFloat(document.getElementById('comprimento').value) || 0;
+    document.getElementById('volume_m3').value = ((largura/100)*(altura/100)*(comprimento/100)).toFixed(4);
+  }
+  document.getElementById('largura').addEventListener('input', calcularVolume);
+  document.getElementById('altura').addEventListener('input', calcularVolume);
+  document.getElementById('comprimento').addEventListener('input', calcularVolume);
+
+  // Busca remetente pelo CNPJ
+  document.getElementById('remetente_cnpj').addEventListener('blur', function() {
+  let cnpj = this.value.replace(/\D/g, '');
+  if(cnpj.length === 14){
+    fetch(`/api/consulta_cnpj?cnpj=${cnpj}`)
+      .then(res => res.json())
+      .then(data => {
+        if(data.erro){
+          alert(data.erro);
+          document.getElementById('cliente_nome').value = '';
+          document.getElementById('cliente_endereco').value = '';
+          document.getElementById('cliente_cidade').value = '';
+          document.getElementById('cliente_uf').value = '';
+        } else {
+          document.getElementById('cliente_nome').value = data.razao_social || '';
+          document.getElementById('cliente_endereco').value = data.endereco || '';
+          document.getElementById('cliente_cidade').value = data.cidade || '';
+          document.getElementById('cliente_uf').value = data.estado || '';
+        }
+      })
+      .catch(() => alert('Erro ao consultar CNPJ do remetente.'));
+  }
+  });
+
+
+  // Busca destinatário pelo CNPJ ou CPF
+  document.getElementById('destinatario_cnpj').addEventListener('blur', function() {
+    let cnpj = this.value.replace(/\D/g, '');
+    if(cnpj.length === 14){
+      fetch(`/api/consulta_cnpj?cnpj=${cnpj}`)
+        .then(res => res.json())
+        .then(data => {
+          if(!data.erro){
+            document.getElementById('destinatario_nome').value = data.razao_social || '';
+            document.getElementById('destinatario_endereco').value = data.endereco || '';
+            document.getElementById('destinatario_cidade').value = data.cidade || '';
+            document.getElementById('destinatario_uf').value = data.estado || '';
+          }
+        })
+        .catch(() => alert('Erro ao consultar CNPJ do destinatário.'));
+    }
+  });
+</script>
+
+{% endblock %}
