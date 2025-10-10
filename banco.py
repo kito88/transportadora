@@ -1,11 +1,11 @@
-import sqlite3
+import os
+import psycopg2
 import os
 
-DB_PATH = os.path.join('db', 'transportadora.db')
-
 def conectar():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    return sqlite3.connect(DB_PATH)
+    url = os.getenv("DATABASE_URL")  # variável de ambiente no Render
+    conn = psycopg2.connect(url)
+    return conn
 
 
 def criar_tabelas():
