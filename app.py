@@ -1,4 +1,5 @@
 import requests
+import os
 import io
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from reportlab.pdfgen import canvas
@@ -241,9 +242,20 @@ def imprimir_coleta(coleta_id):
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
+    # Caminho absoluto do logo
+    logo_path = os.path.join(os.path.dirname(__file__), 'static', 'logo.png')
+    
+    # Tenta carregar o logo — caso exista
+    if os.path.exists(logo_path):
+        try:
+            p.drawImage(logo_path, 50, height - 100, width=100, height=50, preserveAspectRatio=True, mask='auto')
+        except Exception as e:
+            print(f"⚠️ Erro ao desenhar logo: {e}")
+    else:
+        print(f"⚠️ Logo não encontrado: {logo_path}")
 
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, height - 50, "GP CARGO EXPRESS")
+    p.drawString(170, height - 50, "GP CARGO EXPRESS")
     p.setFont("Helvetica", 10)
     p.drawString(50, height - 65, "CNPJ: 00.000.000/0001-00")
     p.drawString(50, height - 80, "Endereço: Rua Tatsuo Kawana - Guarulhos - SP")
