@@ -6,6 +6,10 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from datetime import datetime, timedelta
 from banco import conectar, criar_tabelas
+from reportlab.lib import colors
+from reportlab.platypus import Table, TableStyle, Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+
 
 app = Flask(__name__)
 app.secret_key = 'chave_super_secreta'
@@ -242,27 +246,27 @@ def imprimir_coleta(coleta_id):
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    # Caminho absoluto do logo
-    logo_path = os.path.join(os.path.dirname(__file__), 'static', 'logo.png')
-    
-    # Tenta carregar o logo — caso exista
-    if os.path.exists(logo_path):
-        try:
-            p.drawImage(logo_path, 50, height - 100, width=100, height=50, preserveAspectRatio=True, mask='auto')
-        except Exception as e:
-            print(f"⚠️ Erro ao desenhar logo: {e}")
-    else:
-        print(f"⚠️ Logo não encontrado: {logo_path}")
 
+    # Logo
+    try:
+        p.drawImage("static/logo.png", 50, height - 100, width=100, preserveAspectRatio=True, mask='auto')
+    except:
+        pass  # caso não encontre o logo, continua
+
+    # Cabeçalho
     p.setFont("Helvetica-Bold", 16)
-    p.drawString(170, height - 50, "GP CARGO EXPRESS")
+    p.drawCentredString(width/2, height - 50, "GP CARGO EXPRESS")
     p.setFont("Helvetica", 10)
-    p.drawString(170, height - 65, "CNPJ: 00.000.000/0001-00")
-    p.drawString(170, height - 80, "Endereço: Rua Tatsuo Kawana - Guarulhos - SP")
+    p.drawCentredString(width/2, height - 65, "CNPJ: 00.000.000/0001-00")
+    p.drawCentredString(width/2, height - 80, "Rua Tatsuo Kawana - Guarulhos/SP")
 
+    # Número da Coleta e Data
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(200, height - 110, f"COLETA Nº {coleta[0]}")
+    p.drawString(50, height - 110, f"COLETA Nº {coleta[0]}")
+    p.setFont("Helvetica", 10)
+    p.drawString(width - 200, height - 110, f"Data: {coleta[1].strftime('%d/%m/%Y %H:%M')}")
 
+    # Remetente e Destinatário
     p.setFont("Helvetica-Bold", 12)
     p.drawString(50, height - 140, "Remetente:")
     p.setFont("Helvetica", 10)
@@ -275,21 +279,35 @@ def imprimir_coleta(coleta_id):
     p.drawString(60, height - 215, f"{coleta[6]}")
     p.drawString(60, height - 230, f"{coleta[7]}, {coleta[8]} - {coleta[9]}")
 
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, height - 260, f"Volumes: {coleta[10]}")
-    p.drawString(50, height - 275, f"Peso: {coleta[11]}")
-    p.drawString(50, height - 290, f"Valor da Mercadoria: {coleta[12]}")
-    p.drawString(50, height - 305, f"Dimensões: {coleta[13]}")
+    # Tabela de Volumes / Peso / Valor / Dimensões
+    data = [
+        ["Volumes", "Peso (kg)", "Valor (R$)", "Dimensões (cm)"],
+        [coleta[10] or "-", coleta[11] or "-", coleta[12] or "-", coleta[13] or "-"]
+    ]
+    table = Table(data, colWidths=[100]*4)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+        ('TEXTCOLOR',(0,0),(-1,0),colors.black),
+        ('GRID', (0,0), (-1,-1), 1, colors.black),
+        ('ALIGN',(0,0),(-1,-1),'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTNAME', (0,1), (-1,1), 'Helvetica'),
+    ]))
+    table.wrapOn(p, width, height)
+    table.drawOn(p, 50, height - 300)
 
+    # Observações
     p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, height - 335, "Observações:")
+    p.drawString(50, height - 340, "Observações:")
     p.setFont("Helvetica", 10)
-    text = p.beginText(60, height - 350)
+    text = p.beginText(60, height - 355)
     for linha in (coleta[14] or '').split('\n'):
         text.textLine(linha)
     p.drawText(text)
 
-    p.drawString(50, height - 400, f"Data da Coleta: {coleta[1]}")
+    # Rodapé
+    p.setFont("Helvetica-Oblique", 8)
+    p.drawCentredString(width/2, 30, "www.gpcargo.log.br - Telefone: (11) 99676-5702")
 
     p.showPage()
     p.save()
