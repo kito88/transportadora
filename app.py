@@ -257,8 +257,8 @@ def imprimir_coleta(coleta_id):
     p.setFont("Helvetica-Bold", 16)
     p.drawString(170, height - 50, "GP CARGO EXPRESS")
     p.setFont("Helvetica", 10)
-    p.drawString(50, height - 65, "CNPJ: 00.000.000/0001-00")
-    p.drawString(50, height - 80, "Endereço: Rua Tatsuo Kawana - Guarulhos - SP")
+    p.drawString(170, height - 65, "CNPJ: 00.000.000/0001-00")
+    p.drawString(170, height - 80, "Endereço: Rua Tatsuo Kawana - Guarulhos - SP")
 
     p.setFont("Helvetica-Bold", 14)
     p.drawString(200, height - 110, f"COLETA Nº {coleta[0]}")
