@@ -1,113 +1,95 @@
-import os
 import psycopg2
 import os
 
 def conectar():
     url = os.getenv("DATABASE_URL")  # variável de ambiente no Render
-    conn = psycopg2.connect(url)
-    return conn
+    try:
+        conn = psycopg2.connect(url)
+        return conn
+    except Exception as e:
+        print("Erro ao conectar ao banco:", e)
+        return None
 
 
 def criar_tabelas():
     conn = conectar()
+    if not conn:
+        print("Falha ao conectar ao banco de dados.")
+        return
+
     cursor = conn.cursor()
 
     # Tabela usuários
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT NOT NULL UNIQUE,
-            senha TEXT NOT NULL
+            id SERIAL PRIMARY KEY,
+            usuario VARCHAR(100) UNIQUE NOT NULL,
+            senha VARCHAR(100) NOT NULL
         )
     ''')
 
-    # Insere usuário admin padrão, se não existir
+    # Inserir usuário admin padrão se não existir
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (usuario, senha) VALUES (?, ?)", ('admin', 'admin'))
+        cursor.execute("INSERT INTO usuarios (usuario, senha) VALUES (%s, %s)", ('admin', 'admin'))
 
     # Tabela clientes
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS clientes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            documento TEXT NOT NULL,
-            cep TEXT,
-            endereco TEXT,
-            bairro TEXT,
-            cidade TEXT,
-            estado TEXT,
-            telefone TEXT
+            id SERIAL PRIMARY KEY,
+            nome VARCHAR(150) NOT NULL,
+            documento VARCHAR(20) NOT NULL,
+            cep VARCHAR(10),
+            endereco VARCHAR(150),
+            bairro VARCHAR(100),
+            cidade VARCHAR(100),
+            estado VARCHAR(2),
+            telefone VARCHAR(20)
         )
     ''')
 
     # Tabela fretes
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS fretes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            remetente TEXT NOT NULL,
-            destinatario TEXT NOT NULL,
-            endereco_origem TEXT NOT NULL,
-            endereco_destino TEXT NOT NULL,
-            data_coleta TEXT NOT NULL,
-            status TEXT DEFAULT 'Pendente',
+            id SERIAL PRIMARY KEY,
+            remetente VARCHAR(150) NOT NULL,
+            destinatario VARCHAR(150) NOT NULL,
+            endereco_origem VARCHAR(200) NOT NULL,
+            endereco_destino VARCHAR(200) NOT NULL,
+            data_coleta TIMESTAMP NOT NULL,
+            status VARCHAR(50) DEFAULT 'Pendente',
             observacoes TEXT
         )
     ''')
 
-    # Tabela coletas (corrigida, incluindo status e data_coleta)
+    # Tabela coletas
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS coletas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cliente_id INTEGER,
-            destinatario_nome TEXT,
-            destinatario_endereco TEXT,
-            destinatario_cidade TEXT,
-            destinatario_uf TEXT,
-            data_coleta TEXT DEFAULT CURRENT_TIMESTAMP,
-            volumes TEXT,
-            peso TEXT,
-            valor_mercadoria TEXT,
-            largura REAL,
-            altura REAL,
-            comprimento REAL,
-            dimensoes TEXT,
-            volume_m3 REAL,
+            id SERIAL PRIMARY KEY,
+            cliente_id INTEGER REFERENCES clientes(id),
+            destinatario_nome VARCHAR(150),
+            destinatario_endereco VARCHAR(200),
+            destinatario_cidade VARCHAR(100),
+            destinatario_uf VARCHAR(2),
+            data_coleta TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            volumes VARCHAR(50),
+            peso VARCHAR(50),
+            valor_mercadoria VARCHAR(50),
+            largura NUMERIC,
+            altura NUMERIC,
+            comprimento NUMERIC,
+            dimensoes VARCHAR(100),
+            volume_m3 NUMERIC,
             observacoes TEXT,
-            status TEXT DEFAULT 'Pendente',
-            FOREIGN KEY (cliente_id) REFERENCES clientes(id)
+            status VARCHAR(50) DEFAULT 'Pendente'
         )
     ''')
 
-
-
     conn.commit()
+    cursor.close()
     conn.close()
-
-def adicionar_colunas_coletas():
-    conn = conectar()
-    cursor = conn.cursor()
-    
-    cursor.execute("PRAGMA table_info(coletas)")
-    colunas = [col[1] for col in cursor.fetchall()]
-    
-    # Adicionar colunas se não existirem
-    if 'volumes' not in colunas:
-        cursor.execute("ALTER TABLE coletas ADD COLUMN volumes TEXT")
-    if 'peso' not in colunas:
-        cursor.execute("ALTER TABLE coletas ADD COLUMN peso TEXT")
-    if 'valor_mercadoria' not in colunas:
-        cursor.execute("ALTER TABLE coletas ADD COLUMN valor_mercadoria TEXT")
-    if 'dimensoes' not in colunas:
-        cursor.execute("ALTER TABLE coletas ADD COLUMN dimensoes TEXT")
-    if 'observacoes' not in colunas:
-        cursor.execute("ALTER TABLE coletas ADD COLUMN observacoes TEXT")
-    
-    conn.commit()
-    conn.close()
+    print("✅ Tabelas criadas/verificadas com sucesso no PostgreSQL.")
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     criar_tabelas()
