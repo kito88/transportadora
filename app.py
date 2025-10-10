@@ -1,4 +1,4 @@
-import requests
+6import requests
 import io
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from reportlab.pdfgen import canvas
@@ -336,4 +336,4 @@ def novo_frete():
     return render_template("fretes_form.html")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    #app.run(debug=True)
