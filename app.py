@@ -197,7 +197,7 @@ def nova_coleta():
             request.form['destinatario_uf'],
             request.form.get('volumes', ''),
             request.form.get('peso', ''),
-            request.form.get('valor_mercadoria', ''),
+            request.form.get('valor_mercadoria',''),
             request.form.get('dimensoes', ''),
             request.form.get('observacoes', '')
         )
@@ -277,8 +277,7 @@ def imprimir_coleta(coleta_id):
     p.drawString(50, height - 335, "Observações:")
     p.setFont("Helvetica", 10)
     text = p.beginText(60, height - 350)
-    for linha in (coleta[14] or '').split('
-'):
+    for linha in (coleta[14] or '').split(''):
         text.textLine(linha)
     p.drawText(text)
 
