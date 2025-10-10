@@ -225,85 +225,153 @@ def nova_coleta():
     conn.close()
     return render_template('nova_coleta.html', clientes=clientes)
 
+###IMPRIMIR O PDF DA COLETA
+
+from reportlab.lib.colors import Color, black, HexColor
+
 @app.route('/coletas/imprimir/<int:coleta_id>')
 def imprimir_coleta(coleta_id):
     conn = conectar()
     cursor = conn.cursor()
+
+    # Buscar dados da coleta
     cursor.execute('''
         SELECT c.id, c.data_coleta, cl.nome, cl.endereco, cl.cidade, cl.estado,
                c.destinatario_nome, c.destinatario_endereco, c.destinatario_cidade, c.destinatario_uf,
                c.volumes, c.peso, c.valor_mercadoria, c.dimensoes, c.observacoes
         FROM coletas c
         JOIN clientes cl ON c.cliente_id = cl.id
-        WHERE c.id = %s
+        WHERE c.id = ?
     ''', (coleta_id,))
     coleta = cursor.fetchone()
+
+    # Buscar dados da empresa
+    cursor.execute("SELECT nome, cnpj, ie, endereco FROM empresa WHERE id = 1")
+    empresa = cursor.fetchone()
     conn.close()
 
     if not coleta:
         return "Coleta não encontrada", 404
 
+    if empresa:
+        nome_empresa, cnpj_empresa, ie_empresa, endereco_empresa = empresa
+    else:
+        nome_empresa, cnpj_empresa, ie_empresa, endereco_empresa = (
+            "GP CARGO EXPRESS", "49.710.786/0001-20", "127.847.255.116", "Rua Tatsuo Kawana, Agua Chata - Guarulhos/SP"
+        )
+
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
 
-    # Logo
+    # ------------------ Logo arredondado ------------------
     try:
-        p.drawImage("static/logo.png", 50, height - 100, width=100, preserveAspectRatio=True, mask='auto')
-    except:
-        pass  # caso não encontre o logo, continua
+        import os
+        from reportlab.lib.utils import ImageReader
+        from PIL import Image, ImageDraw
 
-    # Cabeçalho
+        logo_path = os.path.join("static", "logo.png")
+        if os.path.exists(logo_path):
+            # Abrir logo com PIL
+            logo_img = Image.open(logo_path).convert("RGBA")
+            w, h = logo_img.size
+            # Criar máscara arredondada
+            mask = Image.new('L', (w, h), 0)
+            draw = ImageDraw.Draw(mask)
+            draw.ellipse((0,0,w,h), fill=255)
+            logo_img.putalpha(mask)
+            # Salvar temporariamente
+            temp_path = os.path.join("static", "logo_temp.png")
+            logo_img.save(temp_path, format="PNG")
+            # Desenhar no PDF
+            p.drawImage(temp_path, 50, height - 110, width=80, height=80, mask='auto')
+    except Exception as e:
+        print("Erro ao carregar logo:", e)
+
+    # ------------------ Dados da empresa centralizados ------------------
     p.setFont("Helvetica-Bold", 16)
-    p.drawCentredString(width/2, height - 50, "GP CARGO EXPRESS")
+    p.drawCentredString(width / 2 + 30, height - 50, nome_empresa)
     p.setFont("Helvetica", 10)
-    p.drawCentredString(width/2, height - 65, "CNPJ: 00.000.000/0001-00")
-    p.drawCentredString(width/2, height - 80, "Rua Tatsuo Kawana - Guarulhos/SP")
+    p.drawCentredString(width / 2 + 30, height - 65, f"CNPJ: {cnpj_empresa}  IE: {ie_empresa}")
+    p.drawCentredString(width / 2 + 30, height - 80, endereco_empresa)
 
-    # Número da Coleta e Data
+    # Coleta número
     p.setFont("Helvetica-Bold", 14)
-    p.drawString(50, height - 110, f"COLETA Nº {coleta[0]}")
-    p.setFont("Helvetica", 10)
-    p.drawString(width - 200, height - 110, f"Data: {coleta[1].strftime('%d/%m/%Y %H:%M')}")
+    p.drawString(200, height - 130, f"COLETA Nº {coleta[0]}")
 
-    # Remetente e Destinatário
+
+    # Função para desenhar blocos com sombra e fundo branco (corrigida)
+    def draw_block(x, y, w, h, title, lines):
+        # Sombra leve
+        shadow = Color(0,0,0, alpha=0.1)
+        p.setFillColor(shadow)
+        p.roundRect(x+3, y-3, w, h, 10, stroke=0, fill=1)
+        
+        # Fundo branco
+        p.setFillColor(HexColor("#FFFFFF"))
+        p.roundRect(x, y, w, h, 10, stroke=1, fill=1)
+        
+        # Título
+        p.setFillColor(black)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(x+5, y + h - 15, title)
+        
+        # Conteúdo
+        p.setFont("Helvetica", 10)
+        linha_y = y + h - 30
+        for linha in lines:
+            # Quebrar linha em várias se exceder largura
+            linhas_quebradas = textwrap.wrap(linha, width=50)  # Ajuste width conforme necessidade
+            for l in linhas_quebradas:
+                p.drawString(x+10, linha_y, l)
+                linha_y -= 12  # espaçamento entre linhas
+
+
+    # ----------- Blocos Remetente e Destinatário -----------
+    margem_top = height - 160
+    bloco_altura = 80
+    bloco_largura = 250
+
+    draw_block(
+        50, margem_top - bloco_altura,
+        bloco_largura, bloco_altura,
+        "Remetente",
+        [f"Nome: {coleta[2]}", f"Endereço: {coleta[3]}, {coleta[4]} - {coleta[5]}"]
+    )
+
+    draw_block(
+        330, margem_top - bloco_altura,
+        bloco_largura, bloco_altura,
+        "Destinatário",
+        [f"Nome: {coleta[6]}", f"Endereço: {coleta[7]}, {coleta[8]} - {coleta[9]}"]
+    )
+
+    # ----------- Informações da Coleta -----------
+    info_top = margem_top - bloco_altura - 50
+    draw_block(
+        50, info_top - 90,
+        530, 90,
+        "Informações da Coleta",
+        [f"Volumes: {coleta[10]}", f"Peso: {coleta[11]}", f"Valor da Mercadoria: {coleta[12]}", f"Dimensões: {coleta[13]}"]
+    )
+
+    # ----------- Observações -----------
+    obs_top = info_top - 130
+    draw_block(
+        50, obs_top - 60,
+        530, 60,
+        "Observações",
+        (coleta[14] or '').split('\n')
+    )
+
+    # Data da coleta
     p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, height - 140, "Remetente:")
-    p.setFont("Helvetica", 10)
-    p.drawString(60, height - 155, f"{coleta[2]}")
-    p.drawString(60, height - 170, f"{coleta[3]}, {coleta[4]} - {coleta[5]}")
+    p.drawString(50, obs_top - 80, f"Data da Coleta: {coleta[1]}")
 
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, height - 200, "Destinatário:")
-    p.setFont("Helvetica", 10)
-    p.drawString(60, height - 215, f"{coleta[6]}")
-    p.drawString(60, height - 230, f"{coleta[7]}, {coleta[8]} - {coleta[9]}")
-
-    # Tabela de Volumes / Peso / Valor / Dimensões
-    data = [
-        ["Volumes", "Peso (kg)", "Valor (R$)", "Dimensões (cm)"],
-        [coleta[10] or "-", coleta[11] or "-", coleta[12] or "-", coleta[13] or "-"]
-    ]
-    table = Table(data, colWidths=[100]*4)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
-        ('TEXTCOLOR',(0,0),(-1,0),colors.black),
-        ('GRID', (0,0), (-1,-1), 1, colors.black),
-        ('ALIGN',(0,0),(-1,-1),'CENTER'),
-        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-        ('FONTNAME', (0,1), (-1,1), 'Helvetica'),
-    ]))
-    table.wrapOn(p, width, height)
-    table.drawOn(p, 50, height - 300)
-
-    # Observações
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, height - 340, "Observações:")
-    p.setFont("Helvetica", 10)
-    text = p.beginText(60, height - 355)
-    for linha in (coleta[14] or '').split('\n'):
-        text.textLine(linha)
-    p.drawText(text)
+    p.showPage()
+    p.save()
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name=f"coleta_{coleta[0]}.pdf", mimetype='application/pdf')
 
     # Rodapé
     p.setFont("Helvetica-Oblique", 8)
