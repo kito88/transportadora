@@ -241,7 +241,7 @@ def imprimir_coleta(coleta_id):
                c.volumes, c.peso, c.valor_mercadoria, c.dimensoes, c.observacoes
         FROM coletas c
         JOIN clientes cl ON c.cliente_id = cl.id
-        WHERE c.id = ?
+        WHERE c.id = %s
     ''', (coleta_id,))
     coleta = cursor.fetchone()
 
