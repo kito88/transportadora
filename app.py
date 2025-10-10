@@ -22,8 +22,12 @@ def login():
         senha = request.form['senha']
 
         conn = conectar()
+        if not conn:
+            flash("Erro ao conectar ao banco de dados.")
+            return render_template('login.html')
+
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM usuarios WHERE usuario = ? AND senha = ?", (usuario, senha))
+        cursor.execute("SELECT * FROM usuarios WHERE usuario = %s AND senha = %s", (usuario, senha))
         user = cursor.fetchone()
         conn.close()
 
@@ -46,15 +50,12 @@ def dashboard():
 
     conn = conectar()
     cursor = conn.cursor()
-
     cursor.execute("SELECT COUNT(*) FROM clientes")
     total_clientes = cursor.fetchone()[0]
+    conn.close()
 
-    # Inicializar contadores, podem ser atualizados futuramente com dados reais
     fretes_pendentes = 0
     fretes_concluidos = 0
-
-    conn.close()
 
     return render_template('dashboard.html',
                            usuario=session['usuario'],
@@ -77,10 +78,9 @@ def consulta_cnpj():
         dados = resposta.json()
 
         estabelecimento = dados.get('estabelecimento') or {}
-
         razao_social = dados.get('razao_social') or dados.get('nome') or ''
-        logradouro = estabelecimento.get('logradouro') or dados.get('logradouro') or ''
-        numero = estabelecimento.get('numero') or dados.get('numero') or ''
+        logradouro = estabelecimento.get('logradouro') or ''
+        numero = estabelecimento.get('numero') or ''
         telefone = estabelecimento.get('telefone1') or estabelecimento.get('telefone') or ''
 
         dados_relevantes = {
@@ -98,11 +98,13 @@ def consulta_cnpj():
 def listar_clientes():
     if 'usuario' not in session:
         return redirect(url_for('login'))
+
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM clientes")
+    cursor.execute("SELECT * FROM clientes ORDER BY id DESC")
     clientes = cursor.fetchall()
     conn.close()
+
     return render_template('clientes.html', clientes=clientes)
 
 @app.route('/clientes/novo', methods=['GET', 'POST'])
@@ -125,7 +127,7 @@ def novo_cliente():
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO clientes (nome, documento, cep, endereco, bairro, cidade, estado, telefone)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         """, dados)
         conn.commit()
         conn.close()
@@ -154,8 +156,9 @@ def listar_coletas():
     agora = datetime.now()
 
     for coleta in coletas:
-        id_, data_coleta_str, cliente_nome, destinatario_nome, destinatario_cidade, destinatario_uf, status = coleta
-        data_coleta = datetime.strptime(data_coleta_str, '%Y-%m-%d %H:%M:%S')
+        id_, data_coleta, cliente_nome, destinatario_nome, destinatario_cidade, destinatario_uf, status = coleta
+        if isinstance(data_coleta, str):
+            data_coleta = datetime.strptime(data_coleta, '%Y-%m-%d %H:%M:%S')
         if status == 'Pendente':
             if agora - data_coleta > timedelta(hours=24):
                 status_atual = 'Atrasado'
@@ -163,7 +166,7 @@ def listar_coletas():
                 status_atual = 'Pendente'
         else:
             status_atual = status
-        coletas_com_status.append((id_, data_coleta_str, cliente_nome, destinatario_nome, destinatario_cidade, destinatario_uf, status_atual))
+        coletas_com_status.append((id_, data_coleta, cliente_nome, destinatario_nome, destinatario_cidade, destinatario_uf, status_atual))
 
     return render_template('coletas.html', coletas=coletas_com_status)
 
@@ -174,7 +177,7 @@ def marcar_coletado(coleta_id):
 
     conn = conectar()
     cursor = conn.cursor()
-    cursor.execute("UPDATE coletas SET status = 'Coletado' WHERE id = ?", (coleta_id,))
+    cursor.execute("UPDATE coletas SET status = 'Coletado' WHERE id = %s", (coleta_id,))
     conn.commit()
     conn.close()
     flash('Coleta marcada como coletada com sucesso!', 'success')
@@ -197,7 +200,7 @@ def nova_coleta():
             request.form['destinatario_uf'],
             request.form.get('volumes', ''),
             request.form.get('peso', ''),
-            request.form.get('valor_mercadoria',''),
+            request.form.get('valor_mercadoria', ''),
             request.form.get('dimensoes', ''),
             request.form.get('observacoes', '')
         )
@@ -205,24 +208,17 @@ def nova_coleta():
             INSERT INTO coletas 
             (cliente_id, destinatario_nome, destinatario_endereco, destinatario_cidade, destinatario_uf,
              volumes, peso, valor_mercadoria, dimensoes, observacoes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', dados)
         conn.commit()
         conn.close()
         flash("Coleta criada com sucesso!")
         return redirect(url_for('listar_coletas'))
 
-    cliente_id = request.args.get('cliente_id')
-    cliente = None
-    if cliente_id:
-        cursor.execute("SELECT id, nome FROM clientes WHERE id = ?", (cliente_id,))
-        cliente = cursor.fetchone()
-
-    cursor.execute("SELECT id, nome FROM clientes")
+    cursor.execute("SELECT id, nome FROM clientes ORDER BY nome ASC")
     clientes = cursor.fetchall()
     conn.close()
-
-    return render_template('nova_coleta.html', clientes=clientes, cliente=cliente, cliente_id=cliente_id)
+    return render_template('nova_coleta.html', clientes=clientes)
 
 @app.route('/coletas/imprimir/<int:coleta_id>')
 def imprimir_coleta(coleta_id):
@@ -234,7 +230,7 @@ def imprimir_coleta(coleta_id):
                c.volumes, c.peso, c.valor_mercadoria, c.dimensoes, c.observacoes
         FROM coletas c
         JOIN clientes cl ON c.cliente_id = cl.id
-        WHERE c.id = ?
+        WHERE c.id = %s
     ''', (coleta_id,))
     coleta = cursor.fetchone()
     conn.close()
@@ -250,7 +246,7 @@ def imprimir_coleta(coleta_id):
     p.drawString(50, height - 50, "GP CARGO EXPRESS")
     p.setFont("Helvetica", 10)
     p.drawString(50, height - 65, "CNPJ: 00.000.000/0001-00")
-    p.drawString(50, height - 80, "Endereço: Rua Exemplo, 123 - São Paulo - SP")
+    p.drawString(50, height - 80, "Endereço: Rua Tatsuo Kawana - Guarulhos - SP")
 
     p.setFont("Helvetica-Bold", 14)
     p.drawString(200, height - 110, f"COLETA Nº {coleta[0]}")
@@ -277,7 +273,7 @@ def imprimir_coleta(coleta_id):
     p.drawString(50, height - 335, "Observações:")
     p.setFont("Helvetica", 10)
     text = p.beginText(60, height - 350)
-    for linha in (coleta[14] or '').split(''):
+    for linha in (coleta[14] or '').split('\n'):
         text.textLine(linha)
     p.drawText(text)
 
@@ -313,7 +309,7 @@ def novo_frete():
         cur = con.cursor()
         cur.execute("""
             INSERT INTO fretes (remetente, destinatario, endereco_origem, endereco_destino, data_coleta, observacoes)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         """, dados)
         con.commit()
         con.close()
@@ -322,6 +318,5 @@ def novo_frete():
     return render_template("fretes_form.html")
 
 if __name__ == '__main__':
-    # Para rodar em modo debug localmente
     # app.run(debug=True)
     pass
