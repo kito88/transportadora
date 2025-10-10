@@ -335,5 +335,5 @@ def novo_frete():
         return redirect(url_for("listar_fretes"))
     return render_template("fretes_form.html")
 
-if __name__ == '__main__':
+    if __name__ == '__main__':
     #app.run(debug=True)
