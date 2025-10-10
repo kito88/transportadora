@@ -3,8 +3,6 @@ import io
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import cm
-from datetime import datetime
 from datetime import datetime, timedelta
 from banco import conectar, criar_tabelas
 
@@ -52,6 +50,7 @@ def dashboard():
     cursor.execute("SELECT COUNT(*) FROM clientes")
     total_clientes = cursor.fetchone()[0]
 
+    # Inicializar contadores, podem ser atualizados futuramente com dados reais
     fretes_pendentes = 0
     fretes_concluidos = 0
 
@@ -77,10 +76,8 @@ def consulta_cnpj():
         resposta.raise_for_status()
         dados = resposta.json()
 
-        # Alguns campos podem estar diretamente no objeto ou em 'estabelecimento'
         estabelecimento = dados.get('estabelecimento') or {}
 
-        # Tentativa alternativa para pegar campos
         razao_social = dados.get('razao_social') or dados.get('nome') or ''
         logradouro = estabelecimento.get('logradouro') or dados.get('logradouro') or ''
         numero = estabelecimento.get('numero') or dados.get('numero') or ''
@@ -97,8 +94,6 @@ def consulta_cnpj():
     except ValueError:
         return jsonify({'erro': 'Resposta da API inválida'}), 500
 
-###ROTA LISTAR CLIENTES
-
 @app.route('/clientes')
 def listar_clientes():
     if 'usuario' not in session:
@@ -109,9 +104,6 @@ def listar_clientes():
     clientes = cursor.fetchall()
     conn.close()
     return render_template('clientes.html', clientes=clientes)
-
-
-####rota criar clientes
 
 @app.route('/clientes/novo', methods=['GET', 'POST'])
 def novo_cliente():
@@ -142,10 +134,6 @@ def novo_cliente():
 
     return render_template('novo_cliente.html')
 
-
-
-###ROTA PARA LISTAR COLETAS
-
 @app.route('/coletas')
 def listar_coletas():
     if 'usuario' not in session:
@@ -168,7 +156,6 @@ def listar_coletas():
     for coleta in coletas:
         id_, data_coleta_str, cliente_nome, destinatario_nome, destinatario_cidade, destinatario_uf, status = coleta
         data_coleta = datetime.strptime(data_coleta_str, '%Y-%m-%d %H:%M:%S')
-        # Atualizar status baseado na data e status atual
         if status == 'Pendente':
             if agora - data_coleta > timedelta(hours=24):
                 status_atual = 'Atrasado'
@@ -179,8 +166,6 @@ def listar_coletas():
         coletas_com_status.append((id_, data_coleta_str, cliente_nome, destinatario_nome, destinatario_cidade, destinatario_uf, status_atual))
 
     return render_template('coletas.html', coletas=coletas_com_status)
-
-###ALTERANDO O STATUS COLETADO
 
 @app.route('/coletas/marcar_coletado/<int:coleta_id>', methods=['POST'])
 def marcar_coletado(coleta_id):
@@ -195,12 +180,11 @@ def marcar_coletado(coleta_id):
     flash('Coleta marcada como coletada com sucesso!', 'success')
     return redirect(url_for('listar_coletas'))
 
-
-
-###INSERINDO A ATUALIZAÇÃO PARA DATA DA COLETA
-
 @app.route('/coletas/nova', methods=['GET', 'POST'])
 def nova_coleta():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
     conn = conectar()
     cursor = conn.cursor()
 
@@ -239,8 +223,6 @@ def nova_coleta():
     conn.close()
 
     return render_template('nova_coleta.html', clientes=clientes, cliente=cliente, cliente_id=cliente_id)
-
-###IMPRIMIR O PDF DA COLETA
 
 @app.route('/coletas/imprimir/<int:coleta_id>')
 def imprimir_coleta(coleta_id):
@@ -295,7 +277,8 @@ def imprimir_coleta(coleta_id):
     p.drawString(50, height - 335, "Observações:")
     p.setFont("Helvetica", 10)
     text = p.beginText(60, height - 350)
-    for linha in (coleta[14] or '').split('\n'):
+    for linha in (coleta[14] or '').split('
+'):
         text.textLine(linha)
     p.drawText(text)
 
@@ -308,6 +291,8 @@ def imprimir_coleta(coleta_id):
 
 @app.route("/fretes")
 def listar_fretes():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
     con = conectar()
     cur = con.cursor()
     cur.execute("SELECT * FROM fretes ORDER BY data_coleta DESC")
@@ -317,6 +302,8 @@ def listar_fretes():
 
 @app.route("/fretes/novo", methods=["GET", "POST"])
 def novo_frete():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
     if request.method == "POST":
         dados = (
             request.form["remetente"], request.form["destinatario"],
@@ -335,5 +322,7 @@ def novo_frete():
         return redirect(url_for("listar_fretes"))
     return render_template("fretes_form.html")
 
-    if __name__ == '__main__':
-    #app.run(debug=True)
+if __name__ == '__main__':
+    # Para rodar em modo debug localmente
+    # app.run(debug=True)
+    pass
