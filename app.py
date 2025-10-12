@@ -1,5 +1,5 @@
 import requests
-import os
+import os, os, textwrap
 import io
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 from reportlab.pdfgen import canvas
@@ -11,7 +11,8 @@ from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.colors import black, HexColor
 from PIL import Image, ImageDraw
-import textwrap
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 app.secret_key = 'chave_super_secreta'
