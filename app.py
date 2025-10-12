@@ -348,9 +348,6 @@ def imprimir_coleta(coleta_id):
         (coleta[14] or '').split('\n')
     )
 
-    # Data da coleta
-    p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, obs_top - 20, f"Data da Coleta: {coleta[1]}")
 
     # ------------------ Rodapé ------------------
     p.setFont("Helvetica-Oblique", 8)
