@@ -71,6 +71,8 @@ def dashboard():
                            fretes_pendentes=fretes_pendentes,
                            fretes_concluidos=fretes_concluidos)
 
+#Consulta/Cadastrar Cliente via api
+
 @app.route('/api/consulta_cnpj')
 def consulta_cnpj():
     cnpj = request.args.get('cnpj', '')
@@ -79,22 +81,19 @@ def consulta_cnpj():
     if not cnpj_limpo or len(cnpj_limpo) != 14:
         return jsonify({'erro': 'CNPJ inválido'}), 400
 
-    url = f'https://publica.cnpj.ws/cnpj/{cnpj_limpo}'
+    url = f'https://receitaws.com.br/v1/cnpj/{cnpj_limpo}'
     try:
         resposta = requests.get(url, timeout=10)
         resposta.raise_for_status()
         dados = resposta.json()
 
-        estabelecimento = dados.get('estabelecimento') or {}
-        razao_social = dados.get('razao_social') or dados.get('nome') or ''
-        logradouro = estabelecimento.get('logradouro') or ''
-        numero = estabelecimento.get('numero') or ''
-        telefone = estabelecimento.get('telefone1') or estabelecimento.get('telefone') or ''
+        if 'status' in dados and dados['status'] == 'ERROR':
+            return jsonify({'erro': dados.get('message', 'Erro ao consultar CNPJ')}), 400
 
         dados_relevantes = {
-            'razao_social': razao_social,
-            'endereco': f"{logradouro}, {numero}".strip(', '),
-            'telefone': telefone
+            'razao_social': dados.get('nome', ''),
+            'endereco': f"{dados.get('logradouro', '')}, {dados.get('numero', '')}".strip(', '),
+            'telefone': dados.get('telefone', '')
         }
         return jsonify(dados_relevantes)
     except requests.exceptions.RequestException as e:
