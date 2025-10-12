@@ -241,20 +241,18 @@ def imprimir_coleta(coleta_id):
     ''', (coleta_id,))
     coleta = cursor.fetchone()
 
-    # Buscar dados da empresa
-    cursor.execute("SELECT nome, cnpj, ie, endereco FROM empresa WHERE id = 1")
-    empresa = cursor.fetchone()
+    # Fechar conexão após buscar a coleta
     conn.close()
 
     if not coleta:
         return "Coleta não encontrada", 404
 
-    if empresa:
-        nome_empresa, cnpj_empresa, ie_empresa, endereco_empresa = empresa
-    else:
-        nome_empresa, cnpj_empresa, ie_empresa, endereco_empresa = (
-            "GP CARGO EXPRESS", "49.710.786/0001-20", "127.847.255.116", "Rua Tatsuo Kawana, Agua Chata - Guarulhos/SP"
-        )
+    # Dados fixos da empresa (sem consulta ao banco)
+    nome_empresa, cnpj_empresa, ie_empresa, endereco_empresa = (
+        "GP CARGO EXPRESS",
+        "49.710.786/0001-20",
+        "127.847.255.116",
+        "Rua Tatsuo Kawana, Água Chata - Guarulhos/SP")
 
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
