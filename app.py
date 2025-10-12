@@ -9,7 +9,9 @@ from banco import conectar, criar_tabelas
 from reportlab.lib import colors
 from reportlab.platypus import Table, TableStyle, Paragraph
 from reportlab.lib.styles import getSampleStyleSheet
-
+from reportlab.lib.colors import black, HexColor
+from PIL import Image, ImageDraw
+import textwrap
 
 app = Flask(__name__)
 app.secret_key = 'chave_super_secreta'
