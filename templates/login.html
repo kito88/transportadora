@@ -1,18 +1,5 @@
 {% extends 'base.html' %}
 
-<div class="container-fluid">
-    <div class="row">
-        <!-- Sidebar -->
-        {% if session.get('usuario') %}
-        <nav class="col-md-2 d-none d-md-block sidebar">
-            <div class="text-center py-4">
-                <img src="{{ url_for('static', filename='logo.png') }}" class="logo mb-2" alt="Logo">
-                <h6>GP Cargo Express</h6>
-            </div>
-        </nav>
-    </div>
-</div>
-
 
 {% block conteudo %}
 <div class="login-container">
@@ -29,4 +16,5 @@
     {% endwith %}
 </div>
 {% endblock %}
+
 
