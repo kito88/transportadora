@@ -190,6 +190,21 @@ def marcar_coletado(coleta_id):
     flash('Coleta marcada como coletada com sucesso!', 'success')
     return redirect(url_for('listar_coletas'))
 
+@app.route('/coletas/desmarcar_coletado/<int:coleta_id>', methods=['POST'])
+def desmarcar_coletado(coleta_id):
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE coletas SET status = 'Pendente' WHERE id = %s", (coleta_id,))
+    conn.commit()
+    conn.close()
+
+    flash('Coleta desmarcada com sucesso! Agora está como Pendente.', 'info')
+    return redirect(url_for('listar_coletas'))
+
+
 @app.route('/coletas/nova', methods=['GET', 'POST'])
 def nova_coleta():
     if 'usuario' not in session:
