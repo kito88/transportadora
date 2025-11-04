@@ -2,7 +2,9 @@
 {% block conteudo %}
 <h2>Coletas Agendadas</h2>
 
-<a href="{{ url_for('nova_coleta') }}" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Agendar Nova Coleta</a>
+<a href="{{ url_for('nova_coleta') }}" class="btn btn-success mb-3">
+    <i class="bi bi-plus-circle"></i> Agendar Nova Coleta
+</a>
 
 <table class="table table-striped">
     <thead>
@@ -38,8 +40,30 @@
                 {% endif %}
             </td>
             <td>
-                <a href="{{ url_for('imprimir_coleta', coleta_id=coleta[0]) }}" class="btn btn-primary btn-sm"><i class="bi bi-printer"></i> Imprimir</a>
-                <!-- Pode incluir aqui botão para marcar como coletado, editar, etc -->
+                <a href="{{ url_for('imprimir_coleta', coleta_id=coleta[0]) }}" 
+                   class="btn btn-primary btn-sm">
+                    <i class="bi bi-printer"></i> Imprimir
+                </a>
+
+                {% if coleta[6] == 'Pendente' %}
+                <form method="POST" 
+                      action="{{ url_for('marcar_coletado', coleta_id=coleta[0]) }}" 
+                      style="display:inline;">
+                    <button type="submit" class="btn btn-success btn-sm"
+                            onclick="return confirm('Deseja marcar esta coleta como coletada?');">
+                        <i class="bi bi-check2-circle"></i> Coletado
+                    </button>
+                </form>
+                {% elif coleta[6] == 'Coletado' %}
+                <form method="POST" 
+                      action="{{ url_for('desmarcar_coletado', coleta_id=coleta[0]) }}" 
+                      style="display:inline;">
+                    <button type="submit" class="btn btn-warning btn-sm"
+                            onclick="return confirm('Deseja desmarcar esta coleta?');">
+                        <i class="bi bi-arrow-counterclockwise"></i> Desmarcar
+                    </button>
+                </form>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}
